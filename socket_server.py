@@ -13,6 +13,8 @@ from cryptography.hazmat.backends import default_backend
 class AddrType(Enum):
     IP = "192.168.87.128"
     PORT = 8001
+    CPIP = "192.168.87.1"
+    CPPORT = 8001
 
 # temporary database
 class TempAccount(Enum):
@@ -24,70 +26,130 @@ class ServerThread(Thread):
 
     def __init__(self, conn, addr):
         Thread.__init__(self)
-        self.conn = conn
-        self.addr = addr
+        self._conn = conn
+        self._addr = addr
+
     def run(self):
         while True:
-            dataFromClient = self.conn.recv(2048).decode("utf-8")
+            dataFromClient = self._conn.recv(2048).decode("utf-8")
             
             # if client send "close", then close connection
             if dataFromClient == "close":
-                self.conn.close()
-                print(self.addr, "disconnect!")
+                self._conn.close()
+                print(self._addr, "disconnect!")
                 break
             
-            print ("From", self.addr, ": " + dataFromClient)
+            print ("From", self._addr, ": " + dataFromClient)
             # convert str to json
             jsonDataFromClient = json.loads(dataFromClient)
 
-            # check account, passwd, key are exist or not
-            if "account" in jsonDataFromClient and "passwd" in jsonDataFromClient:
-                sha3_512 = hashlib.sha3_512()
-                sha3_512.update(jsonDataFromClient["passwd"].encode('utf-8'))
-                
-                # check account and password are correct or not
-                if jsonDataFromClient["account"] == TempAccount.account.value and sha3_512.hexdigest() == TempAccount.passwd.value:
-                    
-                    # generate private/public key pair
-                    key = rsa.generate_private_key(
-                        backend=default_backend(), 
-                        public_exponent=65537,
-                        key_size=2048)
+            # generate private/public key pair
+            key = rsa.generate_private_key(
+                backend=default_backend(),
+                public_exponent=65537,
+                key_size=2048)
 
-                    # get private key from key
-                    private_key  = key.private_bytes(
-                        encoding=serialization.Encoding.PEM,
-                        format=serialization.PrivateFormat.PKCS8,
-                        encryption_algorithm=serialization.NoEncryption())
+            # get private key from key
+            private_key  = key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption())
 
-                    # get public key from key
-                    public_key = key.public_key().public_bytes(
-                        serialization.Encoding.PEM,
-                        serialization.PublicFormat.SubjectPublicKeyInfo)
+            # get public key from key
+            public_key = key.public_key().public_bytes(
+                serialization.Encoding.PEM,
+                serialization.PublicFormat.SubjectPublicKeyInfo)
 
-                    # decode to string
-                    private_key_str = private_key.decode('utf-8')
-                    public_key_str = public_key.decode('utf-8')
+            # decode to string
+            private_key_str = private_key.decode('utf-8')
+            public_key_str = public_key.decode('utf-8')
 
+            # connect from control program
+            if self._addr[0] == AddrType.CPIP.value:
+                if "hostname" in jsonDataFromClient and "mac_addr" in jsonDataFromClient and \
+                    "Pi_ip" in jsonDataFromClient and "Pi_port" in jsonDataFromClient:
+                    if jsonDataFromClient["hostname"] == "DESKTOP-3D43D08" and jsonDataFromClient["mac_addr"] == "00e04c681786":
 
-                    # with open("private_key.pem") as private_key:
-                    #     with open("public_key.pem") as public_key:
-                    #         encoded = jwt.encode({"iss": AddrType.IP.value, "iat": int(time.time()), "exp": int(time.time()) + 30
-                    #             , "aud": self.addr[0],"public_key": public_key.read(), "machine_id": "c_00001", "mac_addr": "00:0C:29:01:98:27"
-                    #             , "priority": "1", "service_type": "verification_machine"}, private_key.read(), algorithm='RS256'
-                    #             , headers={'test': 'header'})
-                    
-                    encoded = jwt.encode({"iss": AddrType.IP.value, "iat": int(time.time()), "exp": int(time.time()) + 10
-                                , "aud": self.addr[0], "public_key": public_key_str, "machine_id": "c_00001", "mac_addr": "00:0C:29:01:98:27"
+                        encoded = jwt.encode({"iss": AddrType.IP.value, "iat": int(time.time()), "exp": int(time.time()) + 10
+                                , "aud": self._addr[0], "public_key": public_key_str, "hostname": jsonDataFromClient["hostname"]
+                                , "mac_addr": jsonDataFromClient["mac_addr"], "converter_ip": jsonDataFromClient["converter_ip"]
+                                , "converter_port": jsonDataFromClient["converter_port"], "slave_id": jsonDataFromClient["slave_id"]
+                                , "function_code": jsonDataFromClient["function_code"], "starting_address": jsonDataFromClient["starting_address"]
+                                , "quantity_of_x": jsonDataFromClient["quantity_of_x"], "priority": "1"
+                                , "service_type": "verification_machine"}, private_key_str, algorithm='RS256', headers={'test': 'header'})
+                        # Simultaneously send JWT to control program and Raspberry Pi
+                        connectTheOtherClient(jsonDataFromClient["Pi_ip"], jsonDataFromClient["Pi_port"], encoded)
+                        self._conn.sendall(encoded)
+                    else:
+                        self._conn.sendall("Your message has something wrong!".encode("utf-8"))
+                else:
+                    self._conn.sendall("Your message has something missing!".encode("utf-8"))
+            # connect from Raspberry Pi
+            else:
+                if "response" in jsonDataFromClient and "hostname" in jsonDataFromClient and "mac_addr" in jsonDataFromClient and \
+                    "CP_ip" in jsonDataFromClient and "CP_port" in jsonDataFromClient:
+                    if jsonDataFromClient["mac_addr"] == "000c29c683d3":
+                        encoded = jwt.encode({"iss": AddrType.IP.value, "iat": int(time.time()), "exp": int(time.time()) + 10
+                                , "aud": self._addr[0], "public_key": public_key_str, "hostname": jsonDataFromClient["hostname"]
+                                , "mac_addr": jsonDataFromClient["mac_addr"], "response": jsonDataFromClient["response"]
                                 , "priority": "1", "service_type": "verification_machine"}, private_key_str, algorithm='RS256'
                                 , headers={'test': 'header'})
-                    # Simultaneously send JWT to control program and Raspberry Pi
-                    connectTheOtherClient(jsonDataFromClient["ip"], jsonDataFromClient["port"], encoded)
-                    self.conn.sendall(encoded)
+                        # Simultaneously send JWT to control program and Raspberry Pi
+                        connectTheOtherClient(jsonDataFromClient["CP_ip"], jsonDataFromClient["CP_port"], encoded)
+                        self._conn.sendall(encoded)
+                    else:
+                        self._conn.sendall("Your message has something wrong!".encode("utf-8"))
                 else:
-                    self.conn.sendall("Your account or password is wrong!".encode("utf-8"))
-            else:
-                self.conn.sendall("Your message has no account or password!".encode("utf-8"))
+                    self._conn.sendall("Your message has something missing!".encode("utf-8"))
+
+            # # check account, passwd, key are exist or not
+            # if "account" in jsonDataFromClient and "passwd" in jsonDataFromClient:
+            #     sha3_512 = hashlib.sha3_512()
+            #     sha3_512.update(jsonDataFromClient["passwd"].encode('utf-8'))
+                
+            #     # check account and password are correct or not
+            #     if jsonDataFromClient["account"] == TempAccount.account.value and sha3_512.hexdigest() == TempAccount.passwd.value:
+                    
+            #         # generate private/public key pair
+            #         key = rsa.generate_private_key(
+            #             backend=default_backend(), 
+            #             public_exponent=65537,
+            #             key_size=2048)
+
+            #         # get private key from key
+            #         private_key  = key.private_bytes(
+            #             encoding=serialization.Encoding.PEM,
+            #             format=serialization.PrivateFormat.PKCS8,
+            #             encryption_algorithm=serialization.NoEncryption())
+
+            #         # get public key from key
+            #         public_key = key.public_key().public_bytes(
+            #             serialization.Encoding.PEM,
+            #             serialization.PublicFormat.SubjectPublicKeyInfo)
+
+            #         # decode to string
+            #         private_key_str = private_key.decode('utf-8')
+            #         public_key_str = public_key.decode('utf-8')
+
+
+            #         # with open("private_key.pem") as private_key:
+            #         #     with open("public_key.pem") as public_key:
+            #         #         encoded = jwt.encode({"iss": AddrType.IP.value, "iat": int(time.time()), "exp": int(time.time()) + 30
+            #         #             , "aud": self.addr[0],"public_key": public_key.read(), "machine_id": "c_00001", "mac_addr": "00:0C:29:01:98:27"
+            #         #             , "priority": "1", "service_type": "verification_machine"}, private_key.read(), algorithm='RS256'
+            #         #             , headers={'test': 'header'})
+                    
+            #         encoded = jwt.encode({"iss": AddrType.IP.value, "iat": int(time.time()), "exp": int(time.time()) + 10
+            #                     , "aud": self._addr[0], "public_key": public_key_str, "hostname": "c_00001", "mac_addr": "00:0C:29:01:98:27"
+            #                     , "priority": "1", "service_type": "verification_machine"}, private_key_str, algorithm='RS256'
+            #                     , headers={'test': 'header'})
+            #         # Simultaneously send JWT to control program and Raspberry Pi
+            #         connectTheOtherClient(jsonDataFromClient["ip"], jsonDataFromClient["port"], encoded)
+            #         self._conn.sendall(encoded)
+            #     else:
+            #         self._conn.sendall("Your account or password is wrong!".encode("utf-8"))
+            # else:
+            #     self._conn.sendall("Your message has no account or password!".encode("utf-8"))
 
 # connect control program or Raspberry Pi
 def connectTheOtherClient(clientHost, clientPort, encoded):
@@ -95,11 +157,12 @@ def connectTheOtherClient(clientHost, clientPort, encoded):
     context.load_verify_locations("./key/certificate.pem")
     context.options |= (ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1 | ssl.OP_NO_TLSv1_2)
 
-    with context.wrap_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)) as ssock:
+    with context.wrap_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)) as sock:
         try:
-            ssock.connect((clientHost, clientPort))
-            ssock.sendall(encoded)
-            dataFromServer = ssock.recv(2048).decode("utf-8")
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.connect((clientHost, clientPort))
+            sock.sendall(encoded)
+            dataFromServer = sock.recv(2048).decode("utf-8")
             print(dataFromServer)
         except socket.error:
             print ("Connect error")
