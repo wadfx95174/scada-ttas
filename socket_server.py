@@ -11,10 +11,15 @@ from cryptography.hazmat.backends import default_backend
 
 # address enumerate
 class AddrType(Enum):
-    IP = "192.168.87.128"
-    PORT = 8001
-    CPIP = "192.168.87.1"
-    CPPORT = 8001
+    TBAS_IP_eth0 = "192.168.1.100"
+    TBAS_IP_eth1 = "192.168.2.100"
+    TBAS_PORT = 8001
+    CP_IP = "192.168.1.101"
+    CP_PORT = 8001
+
+class MACAddr(Enum):
+    CP = "dca6329152a7"
+    Pi = "000c29c683d3"
 
 # temporary database
 class TempAccount(Enum):
@@ -65,21 +70,23 @@ class ServerThread(Thread):
             public_key_str = public_key.decode('utf-8')
 
             # connect from control program
-            if self._addr[0] == AddrType.CPIP.value:
+            if self._addr[0] == AddrType.CP_IP.value:
                 if "hostname" in jsonDataFromClient and "mac_addr" in jsonDataFromClient and \
                     "Pi_ip" in jsonDataFromClient and "Pi_port" in jsonDataFromClient:
-                    if jsonDataFromClient["hostname"] == "DESKTOP-3D43D08" and jsonDataFromClient["mac_addr"] == "00e04c681786":
+                    if jsonDataFromClient["hostname"] == "controlProgram" and jsonDataFromClient["mac_addr"] == MACAddr.CP.value:
 
-                        encoded = jwt.encode({"iss": AddrType.IP.value, "iat": int(time.time()), "exp": int(time.time()) + 10
+                        encoded = jwt.encode({"iss": AddrType.TBAS_IP_eth0.value, "iat": int(time.time()), "exp": int(time.time()) + 10
                                 , "aud": self._addr[0], "public_key": public_key_str, "hostname": jsonDataFromClient["hostname"]
                                 , "mac_addr": jsonDataFromClient["mac_addr"], "converter_ip": jsonDataFromClient["converter_ip"]
                                 , "converter_port": jsonDataFromClient["converter_port"], "slave_id": jsonDataFromClient["slave_id"]
                                 , "function_code": jsonDataFromClient["function_code"], "starting_address": jsonDataFromClient["starting_address"]
                                 , "quantity_of_x": jsonDataFromClient["quantity_of_x"], "priority": "1"
                                 , "service_type": "verification_machine"}, private_key_str, algorithm='RS256', headers={'test': 'header'})
-                        # Simultaneously send JWT to control program and Raspberry Pi
-                        connectTheOtherClient(jsonDataFromClient["Pi_ip"], jsonDataFromClient["Pi_port"], encoded)
+                        print("To control program : ", encoded)
                         self._conn.sendall(encoded)
+                        # send JWT to Raspberry Pi
+                        connectTheOtherClient(jsonDataFromClient["Pi_ip"], jsonDataFromClient["Pi_port"], encoded)
+                        
                     else:
                         self._conn.sendall("Your message has something wrong!".encode("utf-8"))
                 else:
@@ -88,13 +95,14 @@ class ServerThread(Thread):
             else:
                 if "response" in jsonDataFromClient and "hostname" in jsonDataFromClient and "mac_addr" in jsonDataFromClient and \
                     "CP_ip" in jsonDataFromClient and "CP_port" in jsonDataFromClient:
-                    if jsonDataFromClient["mac_addr"] == "000c29c683d3":
-                        encoded = jwt.encode({"iss": AddrType.IP.value, "iat": int(time.time()), "exp": int(time.time()) + 10
+                    if jsonDataFromClient["mac_addr"] == MACAddr.Pi.value:
+                        encoded = jwt.encode({"iss": AddrType.TBAS_IP_eth0.value, "iat": int(time.time()), "exp": int(time.time()) + 10
                                 , "aud": self._addr[0], "public_key": public_key_str, "hostname": jsonDataFromClient["hostname"]
                                 , "mac_addr": jsonDataFromClient["mac_addr"], "response": jsonDataFromClient["response"]
                                 , "priority": "1", "service_type": "verification_machine"}, private_key_str, algorithm='RS256'
                                 , headers={'test': 'header'})
-                        # Simultaneously send JWT to control program and Raspberry Pi
+                        print("To Raspberry Pi : ", encoded)
+                        # send JWT to control program
                         connectTheOtherClient(jsonDataFromClient["CP_ip"], jsonDataFromClient["CP_port"], encoded)
                         self._conn.sendall(encoded)
                     else:
@@ -162,7 +170,7 @@ def connectTheOtherClient(clientHost, clientPort, encoded):
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             sock.connect((clientHost, clientPort))
             sock.sendall(encoded)
-            dataFromServer = sock.recv(2048).decode("utf-8")
+            dataFromServer = sock.recv(1024).decode("utf-8")
             print(dataFromServer)
         except socket.error:
             print ("Connect error")
@@ -178,9 +186,9 @@ def main():
 
     # open, bind, listen socket
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0) as sock:
-        sock.bind((AddrType.IP.value, AddrType.PORT.value))
+        sock.bind((AddrType.TBAS_IP_eth0.value, AddrType.TBAS_PORT.value))
         sock.listen(15)
-        print ("Server start at: %s:%s" %(AddrType.IP.value, AddrType.PORT.value))
+        print ("Server start at: %s:%s" %(AddrType.TBAS_IP_eth0.value, AddrType.TBAS_PORT.value))
         print ("Wait for connection...")
 
         with context.wrap_socket(sock, server_side=True) as ssock:
