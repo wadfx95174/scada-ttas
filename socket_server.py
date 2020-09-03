@@ -11,8 +11,7 @@ from cryptography.hazmat.backends import default_backend
 
 # address enumerate
 class AddrType(Enum):
-    TBAS_IP_eth0 = "192.168.1.100"
-    TBAS_IP_eth1 = "192.168.2.100"
+    TBAS_IP = "192.168.1.100"
     TBAS_PORT = 8001
     CP_IP = "192.168.1.101"
     CP_PORT = 8001
@@ -75,7 +74,7 @@ class ServerThread(Thread):
                     "Pi_ip" in jsonDataFromClient and "Pi_port" in jsonDataFromClient:
                     if jsonDataFromClient["hostname"] == "controlProgram" and jsonDataFromClient["mac_addr"] == MACAddr.CP.value:
 
-                        encoded = jwt.encode({"iss": AddrType.TBAS_IP_eth0.value, "iat": int(time.time()), "exp": int(time.time()) + 10
+                        encoded = jwt.encode({"iss": AddrType.TBAS_IP.value, "iat": int(time.time()), "exp": int(time.time()) + 10
                                 , "aud": self._addr[0], "public_key": public_key_str, "hostname": jsonDataFromClient["hostname"]
                                 , "mac_addr": jsonDataFromClient["mac_addr"], "converter_ip": jsonDataFromClient["converter_ip"]
                                 , "converter_port": jsonDataFromClient["converter_port"], "slave_id": jsonDataFromClient["slave_id"]
@@ -96,7 +95,7 @@ class ServerThread(Thread):
                 if "response" in jsonDataFromClient and "hostname" in jsonDataFromClient and "mac_addr" in jsonDataFromClient and \
                     "CP_ip" in jsonDataFromClient and "CP_port" in jsonDataFromClient:
                     if jsonDataFromClient["mac_addr"] == MACAddr.Pi.value:
-                        encoded = jwt.encode({"iss": AddrType.TBAS_IP_eth0.value, "iat": int(time.time()), "exp": int(time.time()) + 10
+                        encoded = jwt.encode({"iss": AddrType.TBAS_IP.value, "iat": int(time.time()), "exp": int(time.time()) + 10
                                 , "aud": self._addr[0], "public_key": public_key_str, "hostname": jsonDataFromClient["hostname"]
                                 , "mac_addr": jsonDataFromClient["mac_addr"], "response": jsonDataFromClient["response"]
                                 , "priority": "1", "service_type": "verification_machine"}, private_key_str, algorithm='RS256'
@@ -186,9 +185,9 @@ def main():
 
     # open, bind, listen socket
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0) as sock:
-        sock.bind((AddrType.TBAS_IP_eth0.value, AddrType.TBAS_PORT.value))
+        sock.bind((AddrType.TBAS_IP.value, AddrType.TBAS_PORT.value))
         sock.listen(15)
-        print ("Server start at: %s:%s" %(AddrType.TBAS_IP_eth0.value, AddrType.TBAS_PORT.value))
+        print ("Server start at: %s:%s" %(AddrType.TBAS_IP.value, AddrType.TBAS_PORT.value))
         print ("Wait for connection...")
 
         with context.wrap_socket(sock, server_side=True) as ssock:
