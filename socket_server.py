@@ -18,7 +18,7 @@ class AddrType(Enum):
 
 class MACAddr(Enum):
     CP = "dca6329152a7"
-    Pi = "000c29c683d3"
+    Pi = "dca6329153d6"
 
 # temporary database
 class TempAccount(Enum):
@@ -72,7 +72,7 @@ class ServerThread(Thread):
             if self._addr[0] == AddrType.CP_IP.value:
                 if "hostname" in jsonDataFromClient and "mac_addr" in jsonDataFromClient and \
                     "Pi_ip" in jsonDataFromClient and "Pi_port" in jsonDataFromClient:
-                    if jsonDataFromClient["hostname"] == "controlProgram" and jsonDataFromClient["mac_addr"] == MACAddr.CP.value:
+                    if jsonDataFromClient["hostname"] == "controlprogram" and jsonDataFromClient["mac_addr"] == MACAddr.CP.value:
 
                         encoded = jwt.encode({"iss": AddrType.TBAS_IP.value, "iat": int(time.time()), "exp": int(time.time()) + 10
                                 , "aud": self._addr[0], "public_key": public_key_str, "hostname": jsonDataFromClient["hostname"]
@@ -94,7 +94,7 @@ class ServerThread(Thread):
             else:
                 if "response" in jsonDataFromClient and "hostname" in jsonDataFromClient and "mac_addr" in jsonDataFromClient and \
                     "CP_ip" in jsonDataFromClient and "CP_port" in jsonDataFromClient:
-                    if jsonDataFromClient["mac_addr"] == MACAddr.Pi.value:
+                    if jsonDataFromClient["hostname"] == "verificationmachine" and jsonDataFromClient["mac_addr"] == MACAddr.Pi.value:
                         encoded = jwt.encode({"iss": AddrType.TBAS_IP.value, "iat": int(time.time()), "exp": int(time.time()) + 10
                                 , "aud": self._addr[0], "public_key": public_key_str, "hostname": jsonDataFromClient["hostname"]
                                 , "mac_addr": jsonDataFromClient["mac_addr"], "response": jsonDataFromClient["response"]
