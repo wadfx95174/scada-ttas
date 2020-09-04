@@ -4,27 +4,11 @@ import json
 import jwt, hashlib
 import time
 import os
-from enum import Enum
+# from enum import Enum
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
-
-# address enumerate
-class AddrType(Enum):
-    TBAS_IP = "192.168.1.100"
-    TBAS_PORT = 8001
-    CP_IP = "192.168.1.101"
-    CP_PORT = 8001
-
-class MACAddr(Enum):
-    CP = "dca6329152a7"
-    Pi = "dca6329153d6"
-
-# temporary database
-class TempAccount(Enum):
-    account = "a"
-    passwd = "48c8947f69c054a5caa934674ce8881d02bb18fb59d5a63eeaddff735b0e9801e87294783281ae49fc8287a0fd86779b27d7972d3e84f0fa0d826d7cb67dfefc"
-    key = "456"
+import defines
 
 class ServerThread(Thread):
 
@@ -69,12 +53,12 @@ class ServerThread(Thread):
             public_key_str = public_key.decode('utf-8')
 
             # connect from control program
-            if self._addr[0] == AddrType.CP_IP.value:
+            if self._addr[0] == defines.CP_IP:
                 if "hostname" in jsonDataFromClient and "mac_addr" in jsonDataFromClient and \
                     "Pi_ip" in jsonDataFromClient and "Pi_port" in jsonDataFromClient:
-                    if jsonDataFromClient["hostname"] == "controlprogram" and jsonDataFromClient["mac_addr"] == MACAddr.CP.value:
+                    if jsonDataFromClient["hostname"] == "DESKTOP-3D43D08" and jsonDataFromClient["mac_addr"] == defines.CP_MAC_ADDR:
 
-                        encoded = jwt.encode({"iss": AddrType.TBAS_IP.value, "iat": int(time.time()), "exp": int(time.time()) + 10
+                        encoded = jwt.encode({"iss": defines.TBAS_IP, "iat": int(time.time()), "exp": int(time.time()) + 10
                                 , "aud": self._addr[0], "public_key": public_key_str, "hostname": jsonDataFromClient["hostname"]
                                 , "mac_addr": jsonDataFromClient["mac_addr"], "converter_ip": jsonDataFromClient["converter_ip"]
                                 , "converter_port": jsonDataFromClient["converter_port"], "slave_id": jsonDataFromClient["slave_id"]
@@ -94,8 +78,8 @@ class ServerThread(Thread):
             else:
                 if "response" in jsonDataFromClient and "hostname" in jsonDataFromClient and "mac_addr" in jsonDataFromClient and \
                     "CP_ip" in jsonDataFromClient and "CP_port" in jsonDataFromClient:
-                    if jsonDataFromClient["hostname"] == "verificationmachine" and jsonDataFromClient["mac_addr"] == MACAddr.Pi.value:
-                        encoded = jwt.encode({"iss": AddrType.TBAS_IP.value, "iat": int(time.time()), "exp": int(time.time()) + 10
+                    if jsonDataFromClient["mac_addr"] == defines.PI_MAC_ADDR:
+                        encoded = jwt.encode({"iss": defines.TBAS_IP, "iat": int(time.time()), "exp": int(time.time()) + 10
                                 , "aud": self._addr[0], "public_key": public_key_str, "hostname": jsonDataFromClient["hostname"]
                                 , "mac_addr": jsonDataFromClient["mac_addr"], "response": jsonDataFromClient["response"]
                                 , "priority": "1", "service_type": "verification_machine"}, private_key_str, algorithm='RS256'
@@ -185,9 +169,10 @@ def main():
 
     # open, bind, listen socket
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0) as sock:
-        sock.bind((AddrType.TBAS_IP.value, AddrType.TBAS_PORT.value))
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.bind((defines.TBAS_IP, defines.TBAS_PORT))
         sock.listen(15)
-        print ("Server start at: %s:%s" %(AddrType.TBAS_IP.value, AddrType.TBAS_PORT.value))
+        print ("Server start at: %s:%s" %(defines.TBAS_IP, defines.TBAS_PORT))
         print ("Wait for connection...")
 
         with context.wrap_socket(sock, server_side=True) as ssock:
