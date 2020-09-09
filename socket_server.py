@@ -58,7 +58,7 @@ class ServerThread(Thread):
                     "Pi_ip" in jsonDataFromClient and "Pi_port" in jsonDataFromClient:
                     if jsonDataFromClient["hostname"] == "DESKTOP-3D43D08" and jsonDataFromClient["mac_addr"] == defines.CP_MAC_ADDR:
 
-                        encoded = jwt.encode({"iss": defines.TBAS_IP, "iat": int(time.time()), "exp": int(time.time()) + 10
+                        encoded = jwt.encode({"iss": defines.TBAS_IP, "iat": int(time.time()), "exp": int(time.time()) + 13
                                 , "aud": self._addr[0], "public_key": public_key_str, "hostname": jsonDataFromClient["hostname"]
                                 , "mac_addr": jsonDataFromClient["mac_addr"], "converter_ip": jsonDataFromClient["converter_ip"]
                                 , "converter_port": jsonDataFromClient["converter_port"], "slave_id": jsonDataFromClient["slave_id"]
