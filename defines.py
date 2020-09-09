@@ -1,6 +1,5 @@
 
 # for real experiment
-# CP_IP_eth0 = "140.116.164.141"
 # CP_IP = "192.168.2.101"
 # CP_PORT = 8001
 # TBAS_IP = "192.168.2.100"
