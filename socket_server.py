@@ -55,10 +55,10 @@ class ServerThread(Thread):
             # connect from control program
             if self._addr[0] == defines.CP_IP:
                 if "hostname" in jsonDataFromClient and "mac_addr" in jsonDataFromClient and \
-                    "Pi_ip" in jsonDataFromClient and "Pi_port" in jsonDataFromClient:
+                    "TVM_ip" in jsonDataFromClient and "TVM_port" in jsonDataFromClient:
                     if jsonDataFromClient["hostname"] == "DESKTOP-3D43D08" and jsonDataFromClient["mac_addr"] == defines.CP_MAC_ADDR:
 
-                        encoded = jwt.encode({"iss": defines.TBAS_IP, "iat": int(time.time()), "exp": int(time.time()) + 13
+                        encoded = jwt.encode({"iss": defines.TTAS_IP, "iat": int(time.time()), "exp": int(time.time()) + 13
                                 , "aud": self._addr[0], "public_key": public_key_str, "hostname": jsonDataFromClient["hostname"]
                                 , "mac_addr": jsonDataFromClient["mac_addr"], "converter_ip": jsonDataFromClient["converter_ip"]
                                 , "converter_port": jsonDataFromClient["converter_port"], "slave_id": jsonDataFromClient["slave_id"]
@@ -67,24 +67,24 @@ class ServerThread(Thread):
                                 , "service_type": "verification_machine"}, private_key_str, algorithm='RS256', headers={'test': 'header'})
                         print("To control program : ", encoded)
                         self._conn.sendall(encoded)
-                        # send JWT to Raspberry Pi
-                        connectTheOtherClient(jsonDataFromClient["Pi_ip"], jsonDataFromClient["Pi_port"], encoded)
+                        # send JWT to TVM
+                        connectTheOtherClient(jsonDataFromClient["TVM_ip"], jsonDataFromClient["TVM_port"], encoded)
                         
                     else:
                         self._conn.sendall("Your message has something wrong!".encode("utf-8"))
                 else:
                     self._conn.sendall("Your message has something missing!".encode("utf-8"))
-            # connect from Raspberry Pi
+            # connect from TVM
             else:
                 if "response" in jsonDataFromClient and "hostname" in jsonDataFromClient and "mac_addr" in jsonDataFromClient and \
                     "CP_ip" in jsonDataFromClient and "CP_port" in jsonDataFromClient:
-                    if jsonDataFromClient["mac_addr"] == defines.PI_MAC_ADDR:
-                        encoded = jwt.encode({"iss": defines.TBAS_IP, "iat": int(time.time()), "exp": int(time.time()) + 10
+                    if jsonDataFromClient["mac_addr"] == defines.TVM_MAC_ADDR:
+                        encoded = jwt.encode({"iss": defines.TTAS_IP, "iat": int(time.time()), "exp": int(time.time()) + 10
                                 , "aud": self._addr[0], "public_key": public_key_str, "hostname": jsonDataFromClient["hostname"]
                                 , "mac_addr": jsonDataFromClient["mac_addr"], "response": jsonDataFromClient["response"]
                                 , "priority": "1", "service_type": "verification_machine"}, private_key_str, algorithm='RS256'
                                 , headers={'test': 'header'})
-                        print("To Raspberry Pi : ", encoded)
+                        print("To TVM : ", encoded)
                         # send JWT to control program
                         connectTheOtherClient(jsonDataFromClient["CP_ip"], jsonDataFromClient["CP_port"], encoded)
                         self._conn.sendall(encoded)
@@ -134,7 +134,7 @@ class ServerThread(Thread):
             #                     , "aud": self._addr[0], "public_key": public_key_str, "hostname": "c_00001", "mac_addr": "00:0C:29:01:98:27"
             #                     , "priority": "1", "service_type": "verification_machine"}, private_key_str, algorithm='RS256'
             #                     , headers={'test': 'header'})
-            #         # Simultaneously send JWT to control program and Raspberry Pi
+            #         # Simultaneously send JWT to control program and TVM
             #         connectTheOtherClient(jsonDataFromClient["ip"], jsonDataFromClient["port"], encoded)
             #         self._conn.sendall(encoded)
             #     else:
@@ -142,7 +142,7 @@ class ServerThread(Thread):
             # else:
             #     self._conn.sendall("Your message has no account or password!".encode("utf-8"))
 
-# connect control program or Raspberry Pi
+# connect control program or TVM
 def connectTheOtherClient(clientHost, clientPort, encoded):
     context = ssl.SSLContext(ssl.PROTOCOL_TLS)
     context.load_verify_locations("./key/certificate.pem")
@@ -170,9 +170,9 @@ def main():
     # open, bind, listen socket
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0) as sock:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.bind((defines.TBAS_IP, defines.TBAS_PORT))
+        sock.bind((defines.TTAS_IP, defines.TTAS_PORT))
         sock.listen(15)
-        print ("Server start at: %s:%s" %(defines.TBAS_IP, defines.TBAS_PORT))
+        print ("Server start at: %s:%s" %(defines.TTAS_IP, defines.TTAS_PORT))
         print ("Wait for connection...")
 
         with context.wrap_socket(sock, server_side=True) as ssock:
