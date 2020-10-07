@@ -83,9 +83,6 @@ def connectTheOtherClient(clientIP, clientPort, encoded):
     
     with context.wrap_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)) as sock:
         try:
-            
-            # avoid continuous port occupation
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             print(clientIP)
             print(clientPort)
             sock.connect((clientIP, clientPort))
@@ -93,6 +90,7 @@ def connectTheOtherClient(clientIP, clientPort, encoded):
             sock.sendall(encoded)
             dataFromServer = sock.recv(1024).decode("utf-8")
             print(dataFromServer)
+            sock.close()
         except socket.error:
             print ("Connect error")
 
@@ -119,7 +117,8 @@ def main():
                     # multi-thread
                     newThread = ServerThread(conn, addr)
                     newThread.start()
-                    newThread.join()
+                    # newThread.join()
+
                 except KeyboardInterrupt:
                     break
 
