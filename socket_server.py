@@ -64,7 +64,7 @@ class ServerThread(Thread):
                                 , "aud": self._addr[0], "public_key": public_key_str, "hostname": jsonDataFromClient["hostname"]
                                 , "mac_addr": jsonDataFromClient["mac_addr"], "priority": "1", "service_type": "verification_machine"}
                                 , private_key_str, algorithm='RS256', headers={'test': 'header'})
-                        print("To control program or to TVM : ", encoded)
+                        # print("To control program or to TVM : ", encoded)
                         self._conn.sendall(encoded)
                         connectTheOtherClient(jsonDataFromClient["ip"], jsonDataFromClient["port"], encoded)
                         
@@ -83,8 +83,6 @@ def connectTheOtherClient(clientIP, clientPort, encoded):
     
     with context.wrap_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)) as sock:
         try:
-            print(clientIP)
-            print(clientPort)
             sock.connect((clientIP, clientPort))
             
             sock.sendall(encoded)
