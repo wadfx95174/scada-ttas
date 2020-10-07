@@ -2,27 +2,27 @@
 # for real experiment
 # CP_IP = "192.168.2.101"
 # CP_PORT = 8001
+# CP_MAC_ADDR = "00e04c681786"
+# CP_hostname = "contorlprogram"
 # TTAS_IP = "192.168.2.100"
 # TTAS_PORT = 8001
 # TVM_IP = "192.168.2.102"
 # TVM_PORT = 8001
+# TVM_MAC_ADDR = "dca632c20ad7"
+# TVM_hostname = "TVM"
 # CONVERTER_IP = "192.168.3.105"
 # CONVERTER_PORT = 502
-
-# Mac address for real experiment
-# CP_MAC_ADDR = "00e04c681786"
-# TVM_MAC_ADDR = "dca632c20ad7"
 
 # for vm experiment
 CP_IP = "192.168.87.1"
 CP_PORT = 8002
+CP_MAC_ADDR = "f428531c498d"
+CP_hostname = "DESKTOP-3D43D08"
 TTAS_IP = "192.168.87.129"
 TTAS_PORT = 8001
 TVM_IP = "192.168.87.134"
 TVM_PORT = 8001
+TVM_MAC_ADDR = "000c29c683d3"
+TVM_hostname = "ubuntu"
 CONVERTER_IP = "192.168.2.105"
 CONVERTER_PORT = 502
-
-# Mac address for real experiment
-CP_MAC_ADDR = "f428531c498d"
-TVM_MAC_ADDR = "000c29c683d3"
