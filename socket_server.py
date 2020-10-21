@@ -23,10 +23,10 @@ class ServerThread(Thread):
             # if client send "close", then close connection
             if dataFromClient == "close":
                 self._conn.close()
-                print(self._addr, "disconnect!")
+                # print(self._addr, "disconnect!")
                 break
             
-            print ("From", self._addr, ": " + dataFromClient)
+            # print ("From", self._addr, ": " + dataFromClient)
             # convert str to json
             jsonDataFromClient = json.loads(dataFromClient)
 
@@ -87,7 +87,7 @@ def connectTheOtherClient(clientIP, clientPort, encoded):
             
             sock.sendall(encoded)
             dataFromServer = sock.recv(1024).decode("utf-8")
-            print(dataFromServer)
+            # print(dataFromServer)
             sock.close()
         except socket.error:
             print ("Connect error")
@@ -105,8 +105,8 @@ def main():
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind((defines.TTAS_IP, defines.TTAS_PORT))
         sock.listen(15)
-        print ("Server start at: %s:%s" %(defines.TTAS_IP, defines.TTAS_PORT))
-        print ("Wait for connection...")
+        # print ("Server start at: %s:%s" %(defines.TTAS_IP, defines.TTAS_PORT))
+        # print ("Wait for connection...")
 
         with context.wrap_socket(sock, server_side=True) as ssock:
             while True:
