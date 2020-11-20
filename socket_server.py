@@ -52,24 +52,26 @@ class ServerThread(Thread):
             public_key_str = public_key.decode('utf-8')
             
             # check source IP
-            if self._addr[0] == defines.CP_IP or self._addr[0] == defines.TVM_IP:
+            if (self._addr[0] == defines.CP_IP or self._addr[0] == defines.TVM_IP) \
+                and "hostname" in jsonDataFromClient and "mac_addr" in jsonDataFromClient \
+                and "ip" in jsonDataFromClient and "port" in jsonDataFromClient:
                 # check dict from source IP is exist or not
-                if "hostname" in jsonDataFromClient and "mac_addr" in jsonDataFromClient \
-                    and "ip" in jsonDataFromClient and "port" in jsonDataFromClient:
+#                if "hostname" in jsonDataFromClient and "mac_addr" in jsonDataFromClient \
+#                    and "ip" in jsonDataFromClient and "port" in jsonDataFromClient:
                     # check hostname and mac address from source IP is correct or not
-                    if (jsonDataFromClient["hostname"] == defines.CP_hostname and jsonDataFromClient["mac_addr"] == defines.CP_MAC_ADDR) \
-                        or (jsonDataFromClient["hostname"] == defines.TVM_hostname and jsonDataFromClient["mac_addr"] == defines.TVM_MAC_ADDR):
+                if (jsonDataFromClient["hostname"] == defines.CP_hostname and jsonDataFromClient["mac_addr"] == defines.CP_MAC_ADDR) \
+                    or (jsonDataFromClient["hostname"] == defines.TVM_hostname and jsonDataFromClient["mac_addr"] == defines.TVM_MAC_ADDR):
 
-                        encoded = jwt.encode({"iss": defines.TTAS_IP, "iat": int(time.time()), "exp": int(time.time()) + 60
+                    encoded = jwt.encode({"iss": defines.TTAS_IP, "iat": int(time.time()), "exp": int(time.time()) + 360000
                                 , "aud": self._addr[0], "public_key": public_key_str, "hostname": jsonDataFromClient["hostname"]
                                 , "mac_addr": jsonDataFromClient["mac_addr"], "priority": "1", "service_type": "verification_machine"}
                                 , private_key_str, algorithm='RS256', headers={'test': 'header'})
                         # print("To control program or to TVM : ", encoded)
-                        self._conn.sendall(encoded)
-                        connectTheOtherClient(jsonDataFromClient["ip"], jsonDataFromClient["port"], encoded)
+                    connectTheOtherClient(jsonDataFromClient["ip"], jsonDataFromClient["port"], encoded)
+                    self._conn.sendall(encoded)
                         
-                    else:
-                        self._conn.sendall("Your message has something wrong!".encode("utf-8"))
+#                    else:
+#                        self._conn.sendall("Your message has something wrong!".encode("utf-8"))
                 else:
                     self._conn.sendall("Your message has something missing!".encode("utf-8"))
             else:
@@ -104,7 +106,7 @@ def main():
         # avoid continuous port occupation
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind((defines.TTAS_IP, defines.TTAS_PORT))
-        sock.listen(15)
+        sock.listen(30)
         # print ("Server start at: %s:%s" %(defines.TTAS_IP, defines.TTAS_PORT))
         # print ("Wait for connection...")
 
@@ -119,6 +121,17 @@ def main():
 
                 except KeyboardInterrupt:
                     break
+
+
+
+
+
+
+
+
+
+
+
 
 if __name__ == "__main__":
     main()
